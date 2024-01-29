@@ -2,8 +2,8 @@ venv
 
 .env
 
-.http
-
 __pycache__
 
 db.sqlite3
+
+temp.zip
