@@ -1,45 +1,60 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import authenticate
 from .models import CustomUser
 
-
-class RegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(
-        required=True, 
-        validators=[UniqueValidator(queryset=CustomUser.objects.all())]
-    )
-
-    password = serializers.CharField(
-        max_length=128, 
-        required=True, 
-        write_only=True, 
-        validators=[validate_password]
-    )
-
-    password_2 = serializers.CharField(max_length=128, required=True, write_only=True)
-
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["email", "password", "password_2"]
+        fields = ('id', 'email', 'first_name', 'last_name')
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=255, required=True)
+    password = serializers.CharField(max_length=128, style={'input_type': 'password'}, required=True)
 
     def validate(self, attrs):
-        if attrs["password"] != attrs["password_2"]:
-            raise serializers.ValidationError("Not matching password")
+        email = attrs['email'].lower()
+        password = attrs['password']
+
+        if not CustomUser.objects.filter(email=email).exists():
+            raise serializers.ValidationError("Email is not exists")
+
+        user = authenticate(request=self.context.get('request'), email=email, password=password)
+        # user = True
+
+        if not user:
+            raise serializers.ValidationError("Email or password is wrong")
+        
+        attrs['user'] = user
 
         return attrs
 
-    def create(self, validated_data):
-        user = CustomUser()
+class CreateUserSerializer(serializers.ModelSerializer):
+    
+    password_2 = serializers.CharField(max_length=128, write_only=True)
 
-        user.email = validated_data["email"]
-        user.set_password(validated_data["password"])
-
-        user.save()
-        return user
-
-
-class LoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["email", "password"]
+        fields = '__all__'
+
+        extra_kwargs = {
+            'password' : {'required' : True},
+            'password_2' : {'required' : True}
+        }
+    
+    def validate(self, attrs):
+        email = attrs['email'].strip().lower()
+        
+        if CustomUser.objects.filter(email=email).exists():
+            raise serializers.ValidationError("This email has been used.")
+        
+        if attrs['password'] != attrs['password_2']:
+            raise serializers.ValidationError("Password must be matched")
+        
+        return attrs
+    
+    def create(self, validated_data):
+        
+        validated_data.pop('password_2', None)
+        user = CustomUser.objects.create_user(**validated_data)
+
+        return user

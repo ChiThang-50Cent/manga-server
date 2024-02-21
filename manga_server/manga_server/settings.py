@@ -1,5 +1,6 @@
 from pathlib import Path
 from cloud_storage.config import config_storage
+from datetime import timedelta
 
 config_storage()
 
@@ -30,7 +31,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
-    
+    'knox',
     'user',
     'manga',
 ]
@@ -122,11 +123,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'user.CustomUser'
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
+}
+
+REST_KNOX = {
+    'USER_SERIALIZER': 'user.serializers.UserSerializer',
+    'TOKEN_TTL': timedelta(hours=48)
 }
