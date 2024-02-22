@@ -5,15 +5,15 @@ from user.models import CustomUser
 from . import utils
 
 class MangaSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
     owner_id = serializers.IntegerField(required=True, write_only=True)
 
     class Meta:
         model = Manga
-        fields = ["id", "name", "owner_id"]
+        fields = "__all__"
 
         extra_kwargs = {
             "name": {"required": True}, 
+            "owner" : {"read_only" : True},
             "owner_id": {"required": True}
         }
 
@@ -49,11 +49,16 @@ class ChapterSerializer(serializers.ModelSerializer):
             "order": {"required": True},
             "manga_id": {"required": True},
         }
-
+        
+    def validate(self, attrs):
+        if not attrs["num_of_page"]:
+            raise serializers.ValidationError("Num of page is required")
+        return attrs
+    
     def create(self, validated_data):
         chapter = Chapter()
         manga = Manga.objects.get(id=validated_data["manga_id"])
-            
+        
         chapter.name = validated_data["name"]
         chapter.num_of_page = validated_data["num_of_page"]
         chapter.order = validated_data["order"]

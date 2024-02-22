@@ -17,8 +17,8 @@ class Manga(models.Model):
 
 class Chapter(models.Model):
     name = models.CharField(max_length=255)
-    order = models.CharField(max_length=4, default=1)
-    num_of_page = models.PositiveIntegerField(default=1)
+    order = models.CharField(max_length=4, default=0)
+    num_of_page = models.PositiveIntegerField()
     manga = models.ForeignKey(
         Manga,
         on_delete = models.CASCADE
